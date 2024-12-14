@@ -1,0 +1,62 @@
+iot project
+python code:
+
+import serial
+import mouse  # Using mouse for direct control
+
+ser = serial.Serial("COM8", '9600')
+
+while True:
+    read = ser.readline().decode('ascii').strip()
+    if read:
+        parts = read.split()
+        cmd = parts[0]
+        dx = int(parts[1])  # Change in x
+        dy = int(parts[2])  # Change in y
+
+        if cmd == 'c':
+            mouse.click('left')
+
+        # Move the mouse relative to its current position
+        mouse.move(dx, dy, absolute=False)
+
+
+Arduino code:
+
+int d7 = 7;
+int d8 = 8;
+
+void setup() {
+  pinMode(d7, INPUT_PULLUP);
+  pinMode(d8, INPUT_PULLUP);
+
+  Serial.begin(9600);
+}
+
+void loop() {
+  int X = 0;
+  int Y = 0;
+  for (int i = 0; i < 10; i++) {
+    X += analogRead(A1);  // Read X multiple times for averaging
+    Y += analogRead(A0);  // Read Y multiple times for averaging
+    delay(10);  // Delay between readings for stability
+  }
+  X /= 10;  // Average out the X readings
+  Y /= 10;  // Average out the Y readings
+
+  // Adjust mapping values to increase the movement speed and correct directions
+  int x = map(X, 0, 1023, 30, -30);  // Reversed direction and increased range
+  int y = map(Y, 0, 1023, -30, 30);
+
+  // Check the button state
+  char buttonState = (digitalRead(d8) == LOW) ? 'c' : 'z';
+
+  // Send the control signals
+  Serial.print(buttonState);
+  Serial.print(" ");
+  Serial.print(x);
+  Serial.print(" ");
+  Serial.print(y);
+  Serial.println();
+  delay(100);  // Reduce delay for faster response
+}
